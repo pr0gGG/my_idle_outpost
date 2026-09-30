@@ -59,6 +59,13 @@
     }));
   };
 
+  // Покупка одного уровня: возвращает новое состояние; если монет не хватает — bought=false, ничего не меняется
+  E.tryBuyOne = function (st, level, coins) {
+    const cost = E.bulkCost(st, level, 1);
+    if (!(coins >= cost)) return { bought: false, level, coins, cost };
+    return { bought: true, level: level + 1, coins: coins - cost, cost };
+  };
+
   E.incomePerCycle = (st, level, milestones) => (level <= 0 ? 0 : st.profit * level * E.multiplierAt(level, milestones));
   E.incomePerSec = (st, level, milestones) => E.incomePerCycle(st, level, milestones) / st.cycle;
 

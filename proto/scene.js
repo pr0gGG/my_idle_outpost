@@ -283,6 +283,7 @@
   function station(cx, base, def, o) {
     const tier = MS.filter((m) => o.level >= m);
     ctx.save(); ctx.translate(cx, base);
+    if (o.bounce != null) { const k = 1 + 0.08 * Math.sin(Math.PI * o.bounce); ctx.scale(k, k); } // пружинка при покупке (ART_GUIDE §8)
     shadow(0, 2, 58, 9, 0.28);
     // задняя стенка и работник
     block(-42, -90, 84, 60, mix('wood_dark', 'ui_bg', 0.5), 2, 6);
@@ -352,40 +353,49 @@
   const workerC = { skin: 'skin_1', cloth: 'cloth_teal', apron: '#f4f1ea', hat: 'hood', scale: 0.92 };
   const walker = { skin: 'skin_4', cloth: 'cloth_mustard', apron: 'wood_dark', hat: 'cap', hatColor: 'stone', prop: 'tray', scale: 1.0 };
 
-  drawField();
-  drawEnemiesBehind();
-  drawFence();
-  drawRoad();
+  const POS = [{ id: 'tavern', x: 60, y: 428 }, { id: 'forge', x: 180, y: 448 }, { id: 'alchemist', x: 300, y: 428 }];
+  const WORKERS = { tavern: workerA, forge: workerB, alchemist: workerC };
+  const DEFAULT_STATE = { levels: { tavern: 60, forge: 26, alchemist: 260 }, bounce: {}, popups: [] };
 
-  // клиенты стоят за прилавком в закреплённых слотах (рисуются до прилавка — нижняя часть скрыта столешницей)
-  const clients = [
-    { x: SLOT_X[0], skin: 'skin_2', cloth: 'cloth_teal', hat: 'hood', order: 'food', n: 2 },
-    { x: SLOT_X[1], skin: 'skin_1', cloth: 'cloth_red', hat: 'hat', order: 'weapon', n: 1 },
-    { x: SLOT_X[2], skin: 'skin_3', cloth: 'stone', hat: 'none', order: 'potion', n: 3 },
-    { x: SLOT_X[3], skin: 'skin_4', cloth: 'cloth_mustard', hat: 'band', hatColor: 'cloth_red', order: 'food', n: 1, done: true },
-  ];
-  clients.forEach((c) => chibi(c.x, Y.roadEnd + 13, { skin: c.skin, cloth: c.cloth, hat: c.hat, hatColor: c.hatColor, scale: 1.2 }));
-  drawCounter();
-  drawYardGround();
+  // state.bounce[id] — фаза пружинки 0..1 (нет ключа — покой); state.popups — всплывающие числа [{x, y, text, a}]
+  function render(state) {
+    state = state || DEFAULT_STATE;
+    seed = 7; ctx.clearRect(0, 0, W, H);
+    drawField();
+    drawEnemiesBehind();
+    drawFence();
+    drawRoad();
 
-  // объекты двора сортируются по y
-  const drawables = [
-    { y: 428, f: () => station(60, 428, tav[0], { level: 60, worker: workerA }) },
-    { y: 448, f: () => station(180, 448, tav[1], { level: 26, worker: workerB }) },
-    { y: 428, f: () => station(300, 428, tav[2], { level: 260, worker: workerC }) },
-    { y: 352, f: () => chibi(120, 352, walker) },
-    { y: 344, f: () => sack(338, 352) },
-    { y: 612, f: () => cart(58, 618) }, { y: 628, f: () => hay(146, 632) },
-    { y: 612, f: () => sack(208, 614) }, { y: 626, f: () => sack(226, 628) },
-    { y: 640, f: () => crate(270, 646, 1) }, { y: 600, f: () => lampPost(24, 560) },
-  ];
-  drawables.sort((a, b) => a.y - b.y).forEach((d) => d.f());
+    // клиенты стоят за прилавком в закреплённых слотах (рисуются до прилавка — нижняя часть скрыта столешницей)
+    const clients = [
+      { x: SLOT_X[0], skin: 'skin_2', cloth: 'cloth_teal', hat: 'hood', order: 'food', n: 2 },
+      { x: SLOT_X[1], skin: 'skin_1', cloth: 'cloth_red', hat: 'hat', order: 'weapon', n: 1 },
+      { x: SLOT_X[2], skin: 'skin_3', cloth: 'stone', hat: 'none', order: 'potion', n: 3 },
+      { x: SLOT_X[3], skin: 'skin_4', cloth: 'cloth_mustard', hat: 'band', hatColor: 'cloth_red', order: 'food', n: 1, done: true },
+    ];
+    clients.forEach((c) => chibi(c.x, Y.roadEnd + 13, { skin: c.skin, cloth: c.cloth, hat: c.hat, hatColor: c.hatColor, scale: 1.2 }));
+    drawCounter();
+    drawYardGround();
 
-  // поверх: пузыри, чаевые, числа, красная стрелка над станцией
-  clients.forEach((c) => bubble(c.x, Y.roadEnd - 60, c.order, c.n, c.done));
-  // товар на подносе рабочего уже на прилавке у слота 2
-  coinTip(270, Y.roadEnd - 10);
-  floatText(300, 318, '+128', 0.95);
-  // у Таверны активен красный кружок → цифра дохода скрыта (правило ART_GUIDE §8а)
-  window.__scene = { W, H, Y, SLOT_X, stations: [{ x: 60, y: 428 }, { x: 180, y: 448 }, { x: 300, y: 428 }] };
+    // объекты двора сортируются по y
+    const st = (i) => ({ f: () => station(POS[i].x, POS[i].y, tav[i], { level: state.levels[POS[i].id], worker: WORKERS[POS[i].id], bounce: state.bounce[POS[i].id] }), y: POS[i].y });
+    const drawables = [
+      st(0), st(1), st(2),
+      { y: 352, f: () => chibi(120, 352, walker) },
+      { y: 344, f: () => sack(338, 352) },
+      { y: 612, f: () => cart(58, 618) }, { y: 628, f: () => hay(146, 632) },
+      { y: 612, f: () => sack(208, 614) }, { y: 626, f: () => sack(226, 628) },
+      { y: 640, f: () => crate(270, 646, 1) }, { y: 600, f: () => lampPost(24, 560) },
+    ];
+    drawables.sort((a, b) => a.y - b.y).forEach((d) => d.f());
+
+    // поверх: пузыри, чаевые, числа дохода
+    clients.forEach((c) => bubble(c.x, Y.roadEnd - 60, c.order, c.n, c.done));
+    coinTip(270, Y.roadEnd - 10);
+    floatText(300, 318, '+128', 0.95);
+    // у Таверны активен красный кружок → цифра дохода скрыта (правило ART_GUIDE §8а)
+    (state.popups || []).forEach((p) => floatText(p.x, p.y, p.text, p.a));
+  }
+  render();
+  window.__scene = { W, H, Y, SLOT_X, render, DEFAULT_STATE, stations: POS };
 })();

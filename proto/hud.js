@@ -24,27 +24,20 @@
   h.push('<button class="stn-up" style="left:' + (s0.x - 22) + 'px;top:' + (top + s0.y - 126 - 22) + 'px" aria-label="Улучшить"><span class="upcircle">' + ARROW + '</span></button>');
 
   // карточка станции: ?card=forge (по умолчанию) | alchemist. Узкий плавающий тултип с хвостиком к станции.
+  // Каркас статичный, значения обновляет demo.js (updateCard), чтобы кнопка не пересоздавалась во время удержания.
   const which = new URLSearchParams(location.search).get('card') === 'alchemist' ? 'alchemist' : 'forge';
-  const MSL = [10, 25, 50, 100, 200, 250, 500];
-  const STN = CONFIG.LOCATIONS[0].stations;
   const CARDS = {
-    forge:     { idx: 1, def: STN[1], name: 'Кузня',   level: 26,  next: 50,  nextTxt: '×3 · −15%',  coins: 12400 },
-    alchemist: { idx: 2, def: STN[2], name: 'Алхимик', level: 260, next: 500, nextTxt: '×10 · −25%', coins: 1.5e19 },
+    forge:     { idx: 1, id: 'forge',     name: 'Кузня',   coins: 12400 },
+    alchemist: { idx: 2, id: 'alchemist', name: 'Алхимик', coins: 1.5e19 },
   };
   const c = CARDS[which], st = S.stations[c.idx];
-  const win = Economy.starWindow(c.level, MSL, 5);
-  const price = Economy.bulkCost(c.def, c.level, 1);
-  const afford = c.coins >= price;
   const cardW = 216, cardLeft = Math.max(6, Math.min(360 - cardW - 6 - 64 - 4, st.x - cardW / 2));
   const tail = Math.max(18, Math.min(cardW - 18, st.x - cardLeft));
-  const pct = Math.min(100, c.level / c.next * 100);
-  const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 10V7a5 5 0 0 1 10 0v3h1v11H6V10zm2 0h6V7a3 3 0 0 0-6 0z"/></svg>';
   h.push('<div class="card" data-card="' + which + '" style="left:' + cardLeft + 'px;top:' + (top + st.y + 8) + 'px;--tail:' + tail + 'px">' +
-    '<h3>' + c.name + '<span class="lv">Ур. ' + c.level + '</span></h3>' +
-    '<div class="stars">' + win.map((w) => '<span class="star' + (w.reached ? ' on' : '') + (w.next ? ' next' : '') + '">' + STAR(w.reached) + '</span>').join('') + '</div>' +
-    '<div class="bar"><i style="width:' + pct + '%"></i><span>' + c.level + '/' + c.next + ' → ' + c.nextTxt + '</span></div>' +
-    '<button class="buy' + (afford ? '' : ' off') + '" aria-label="Купить уровень. Долгое нажатие — максимум"><b class="b1">+1 ур.</b><small class="b2">' +
-      (afford ? G.currencyIcon('coins') + fmt(price) : LOCK + 'ещё ' + fmt(price - c.coins)) + '</small></button></div>');
+    '<h3><span class="nm">' + c.name + '</span><span class="lv"></span></h3>' +
+    '<div class="stars"></div>' +
+    '<div class="bar"><i></i><span></span></div>' +
+    '<button class="buy" aria-label="Купить уровень. Удерживайте для серии покупок"><b class="b1">+1 ур.</b><small class="b2"></small></button></div>');
 
 
   // большая кнопка каталога
@@ -53,17 +46,7 @@
   h.push('<nav class="tabbar">' + tabs.map(([id, name], i) => '<button class="tab' + (i === 0 ? ' on' : '') + '">' + G.tabIcons[id] + '<span>' + name + '</span>' + (id === 'chests' ? '<i class="dot"></i>' : '') + '</button>').join('') + '</nav>');
   hud.innerHTML = h.join('');
 
-  // Покупка уровня: короткое нажатие = +1 уровень, долгое (≥450 мс) = максимум доступного (Economy.maxAffordable).
-  (function () {
-    const btn = document.querySelector('.buy'); if (!btn || btn.classList.contains('off')) return;
-    const b1 = btn.querySelector('.b1'); let timer, long = false, t0;
-    const say = (txt) => { b1.textContent = txt; clearTimeout(say.t); say.t = setTimeout(() => { b1.textContent = '+1 ур.'; }, 1100); };
-    btn.addEventListener('pointerdown', () => { long = false; btn.classList.add('holding'); timer = setTimeout(() => { long = true; const n = Economy.maxAffordable(c.def, c.level, c.coins); say('+' + n + ' ур. MAX'); btn.classList.remove('holding'); }, CONFIG.BUY.longPressMs); });
-    const end = () => { clearTimeout(timer); btn.classList.remove('holding'); };
-    btn.addEventListener('pointerup', () => { end(); if (!long) say('куплено +1'); });
-    btn.addEventListener('pointerleave', end); btn.addEventListener('pointercancel', end);
-    btn.addEventListener('contextmenu', (e) => e.preventDefault());
-  })();
+  window.__hud = { which, card: CARDS[which], pillCoinsEl: document.querySelector('.pill span:nth-of-type(2)'), STAR, LOCK: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 10V7a5 5 0 0 1 10 0v3h1v11H6V10zm2 0h6V7a3 3 0 0 0-6 0z"/></svg>' };
 
   // масштаб под окно
   function fit() {

@@ -55,22 +55,69 @@ test('MAX: cost(k) <= coins < cost(k+1) на случайных данных', (
     assert.ok(E.bulkCost(st, lvl, k + 1) > coins, `not max: ${st.id} lvl ${lvl} coins ${coins} k ${k}`);
   }
 });
-test('покупка: тап = ровно 1 уровень (x1), долгое нажатие = max', () => {
-  assert.strictEqual(E.buyCount(tavern, 0, 1e6, 'x1', C.BUY_AMOUNT), 1);
-  assert.strictEqual(E.buyCount(tavern, 0, 1e6, 'max', C.BUY_AMOUNT), E.maxAffordable(tavern, 0, 1e6));
-});
-test('покупка: долгое нажатие покупает столько, сколько хватает, и оставляет остаток меньше цены следующего', () => {
-  for (const coins of [10, 25, 100, 5e3, 1e9]) {
-    const k = E.buyCount(tavern, 3, coins, 'max', C.BUY_AMOUNT);
-    if (k > 0) assert.ok(E.bulkCost(tavern, 3, k) <= coins);
-    assert.ok(coins - E.bulkCost(tavern, 3, k) < E.stepCost(tavern, 3 + k) + 1);
-  }
-});
-test('покупка: хватает ровно на 1 уровень — max = 1; не хватает — 0 (оба жеста ничего не покупают)', () => {
+test('MAX-функция остаётся корректной (нужна автопокупке и старому UI)', () => {
   const c1 = E.bulkCost(tavern, 7, 1);
   assert.strictEqual(E.maxAffordable(tavern, 7, c1), 1); assert.strictEqual(E.maxAffordable(tavern, 7, c1 - 1), 0);
 });
-test('конфиг: порог долгого нажатия задан', () => { assert.ok(C.BUY.longPressMs >= 300 && C.BUY.longPressMs <= 800); });
+
+// ---- покупка: тап и удержание ----
+const Hold = require(path.join(root, 'src/hold.js'));
+const HC = C.BUY.hold;
+// имитация игрока: держит кнопку `seconds` секунд кадрами по dt; возвращает историю покупок
+function simulateHold(st, level, coins, seconds, dt) {
+  const h = Hold.create(HC); const ticks = []; let lv = level, c = coins;
+  const attempt = (tSec) => { const r = E.tryBuyOne(st, lv, c); if (!r.bought) { h.stop(); return false; } lv = r.level; c = r.coins; ticks.push(tSec); return true; };
+  for (let i = 0, n = h.start(); i < n; i++) attempt(0);
+  for (let f = 1; f * dt <= seconds + 1e-9 && h.active; f++) {
+    const n = h.update(dt);
+    for (let i = 0; i < n; i++) if (!attempt(f * dt)) break;
+  }
+  return { ticks, level: lv, coins: c, active: h.active };
+}
+test('тап: одно нажатие покупает ровно 1 уровень, как раньше', () => {
+  const h = Hold.create(HC); assert.strictEqual(h.start(), 1);
+  assert.strictEqual(h.update(0.1), 0); h.stop(); assert.strictEqual(h.update(5), 0);
+  const r = simulateHold(tavern, 0, 1e6, 0.2, 1 / 60); assert.strictEqual(r.ticks.length, 1); assert.strictEqual(r.level, 1);
+});
+test('тап без денег ничего не покупает', () => {
+  const r = simulateHold(tavern, 0, tavern.baseCost - 1, 0.1, 1 / 60); assert.strictEqual(r.ticks.length, 0); assert.strictEqual(r.level, 0); assert.strictEqual(r.active, false);
+});
+test('удержание: ~4 покупок в секунду в начале, разгон до ~8 после первой секунды', () => {
+  const r = simulateHold(tavern, 0, 1e15, 5, 1 / 60);
+  const inRange = (a, b) => r.ticks.filter((x) => x > a && x <= b).length;
+  assert.ok(inRange(0, 1) >= 3 && inRange(0, 1) <= 5, 'первая секунда: ' + inRange(0, 1));
+  const last = inRange(3.5, 4.5); assert.ok(last >= 7 && last <= 9, 'на 4-й секунде: ' + last);
+  for (let i = 2; i < r.ticks.length; i++) assert.ok(r.ticks[i] - r.ticks[i - 1] <= r.ticks[i - 1] - r.ticks[i - 2] + 1 / 60 + 1e-9, 'интервалы не растут');
+  assert.ok(Hold.rateAt(0, HC) === HC.rateStart && Hold.rateAt(99, HC) === HC.rateMax);
+});
+test('удержание: серия останавливается сразу, когда кончились монеты, и не уходит в минус', () => {
+  for (const extra of [0, 3, 7]) {
+    let budget = 0; for (let i = 0; i < 5; i++) budget += E.bulkCost(tavern, 3 + i, 1); // серия по одному: каждая покупка округляется вверх
+    const coins = budget + Math.min(extra, E.bulkCost(tavern, 8, 1) - 1); // хватает ровно на 5 уровней, остаток меньше цены шестого
+    const r = simulateHold(tavern, 3, coins, 10, 1 / 60);
+    assert.strictEqual(r.ticks.length, 5, 'куплено ' + r.ticks.length); assert.strictEqual(r.level, 8);
+    assert.ok(r.coins >= 0 && r.coins < E.bulkCost(tavern, 8, 1)); assert.strictEqual(r.active, false, 'серия остановлена');
+    assert.ok(r.ticks[4] < 2.5, 'последняя покупка не позже, чем по расписанию: ' + r.ticks[4]);
+  }
+});
+test('удержание: если монет хватает на 1 уровень — купит 1 и остановится', () => {
+  const r = simulateHold(tavern, 5, E.bulkCost(tavern, 5, 1), 5, 1 / 60); assert.strictEqual(r.ticks.length, 1); assert.strictEqual(r.active, false);
+});
+test('удержание: большой шаг dt (лаг) не даёт всплеска покупок', () => {
+  const h = Hold.create(HC); h.start(); const n = h.update(2.0);
+  assert.ok(n <= HC.maxPerUpdate); assert.ok(h.update(1 / 60) <= 1);
+  let burst = 0; for (let i = 0; i < 30; i++) burst += h.update(1 / 60); assert.ok(burst <= 6, 'после лага ' + burst + ' за полсекунды');
+});
+test('удержание: отпустили — сразу стоп; повторное нажатие начинает серию заново', () => {
+  const h = Hold.create(HC); h.start(); h.update(1.5); h.stop(); assert.strictEqual(h.active, false); assert.strictEqual(h.update(1), 0);
+  assert.strictEqual(h.start(), 1); assert.strictEqual(h.update(0.1), 0);
+});
+test('tryBuyOne: не меняет состояние при нехватке монет', () => {
+  const r = E.tryBuyOne(tavern, 4, 1); assert.deepStrictEqual([r.bought, r.level, r.coins], [false, 4, 1]);
+});
+test('конфиг удержания: разумные значения (4–8 покупок/с, ускорение после 1 с)', () => {
+  assert.ok(HC.rateStart >= 3 && HC.rateMax <= 10 && HC.rateMax > HC.rateStart && HC.rampAfter >= 0.5 && HC.initialDelay >= 0.2 && HC.maxPerUpdate >= 1);
+});
 
 // ---- рубежи и доход ----
 test('рубежи: множитель растёт ровно на порогах', () => {
