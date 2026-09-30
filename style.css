@@ -1,0 +1,48 @@
+:root {
+  --ui-bg: #2a1b2e; --ui-panel: #3d2742; --ui-text: #fff4e0; --ui-accent: #ffb347;
+  --state-bad: #e0453a; --state-disabled: #7a6b78;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: var(--ui-bg); overflow: hidden; overscroll-behavior: none; }
+body { color: var(--ui-text); font: 14px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; user-select: none; touch-action: manipulation; }
+#viewport {
+  position: fixed; inset: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+#game { position: absolute; left: 50%; top: 50%; width: 360px; height: 640px; transform-origin: center; background: var(--ui-bg); overflow: hidden; }
+#scene { position: absolute; left: 0; top: 0; width: 360px; height: 352px; display: block; }
+
+/* верхняя полоса валют */
+#topbar { position: absolute; left: 0; top: 0; width: 100%; height: 40px; z-index: 5; padding: 4px 8px; }
+.cur-bar { display: flex; align-items: center; gap: 12px; min-height: 44px; margin-top: -2px; padding: 0 12px; border: 0; border-radius: 12px; background: rgba(42,27,46,.72); color: var(--ui-text); font: inherit; cursor: pointer; }
+.chip { display: inline-flex; align-items: center; gap: 6px; }
+.chip .val { font-size: 16px; font-variant-numeric: tabular-nums; }
+.ico { display: inline-flex; width: 20px; height: 20px; }
+.ico svg { width: 20px; height: 20px; }
+.caret { opacity: .7; font-size: 12px; }
+.cur-drop { position: absolute; left: 8px; top: 46px; min-width: 220px; padding: 8px 12px; border-radius: 12px; background: var(--ui-panel); box-shadow: 0 6px 18px rgba(0,0,0,.45); }
+.cur-drop[hidden], [hidden] { display: none !important; }
+.cur-drop-title { font-size: 12px; opacity: .7; margin-bottom: 4px; }
+.cur-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+.cur-row .nm { flex: 1; }
+.cur-row .val { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* панель вкладки */
+#panel { position: absolute; left: 0; top: 352px; width: 360px; height: 232px; padding: 12px; background: var(--ui-panel); border-radius: 16px 16px 0 0; overflow-y: auto; }
+.hint { margin: 0 0 12px; opacity: .8; }
+.btn { min-width: 44px; min-height: 44px; padding: 0 20px; border: 0; border-radius: 12px; background: var(--ui-accent); color: #2a1b2e; font-weight: 700; font-size: 15px; font-family: inherit; box-shadow: 0 3px 0 #b87a2a; cursor: pointer; }
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #b87a2a; }
+.segment { display: flex; gap: 4px; padding: 4px; margin-bottom: 12px; border-radius: 12px; background: var(--ui-bg); }
+.seg-btn { flex: 1; min-height: 44px; border: 0; border-radius: 9px; background: transparent; color: var(--ui-text); font-weight: 600; font-size: 15px; font-family: inherit; cursor: pointer; }
+.seg-btn.active { background: var(--ui-accent); color: #2a1b2e; }
+
+/* нижние вкладки */
+#tabbar { position: absolute; left: 0; bottom: 0; width: 100%; height: 56px; display: flex; background: var(--ui-bg); border-top: 1px solid rgba(255,255,255,.08); }
+.tab-btn { position: relative; flex: 1; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 0; background: transparent; color: rgba(255,244,224,.6); font-weight: 600; font-size: 11px; font-family: inherit; cursor: pointer; }
+.tab-btn.active { color: var(--ui-accent); }
+.tab-btn.active::after { content: ""; position: absolute; left: 25%; right: 25%; bottom: 2px; height: 3px; border-radius: 2px; background: var(--ui-accent); }
+.tab-btn .dot { position: absolute; top: 5px; left: calc(50% + 6px); width: 8px; height: 8px; border-radius: 50%; background: var(--state-bad); border: 1.5px solid var(--ui-bg); box-sizing: content-box; }
+
+#toast { position: absolute; left: 50%; bottom: 70px; transform: translateX(-50%); max-width: 320px; padding: 10px 16px; border-radius: 12px; background: rgba(0,0,0,.8); color: var(--ui-text); text-align: center; z-index: 20; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
