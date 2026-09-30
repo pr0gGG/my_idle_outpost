@@ -26,4 +26,4 @@ node tools/test.js
 
 ## Публикация (GitHub Pages)
 Settings → Pages → Source: *Deploy from a branch* → `main` / `/ (root)`.
-Адрес: https://pr0gGG.github.io/my_idle_outpost/
+Адрес: https://pr0ggg.github.io/my_idle_outpost/
