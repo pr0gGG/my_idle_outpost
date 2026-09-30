@@ -10,6 +10,15 @@
     inventory: s('<path fill="currentColor" d="M8 4a4 3 0 0 1 8 0v1h2l2 4v11H4V9l2-4h2z"/><path fill="#2a1b2e" opacity=".45" d="M8 13h8v5H8z"/>'),
   };
 
+  // Иконки интерфейса поста (SVG-строки)
+  G.icons = {
+    arrow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M12 3l9 10h-6v8H9v-8H3z"/></svg>',
+    star: (on) => '<svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.2 6.8.8-5 4.7 1.3 6.7L12 17.5 6 20.9l1.3-6.7-5-4.7 6.8-.8z" fill="' + (on ? '#ffc93c' : 'none') + '" stroke="' + (on ? '#d9971a' : '#9aa0ac') + '" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    lock: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 10V7a5 5 0 0 1 10 0v3h1v11H6V10zm2 0h6V7a3 3 0 0 0-6 0z"/></svg>',
+    safe: '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path fill="currentColor" d="M3 10a9 7 0 0 1 18 0v2H3z"/><path fill="currentColor" opacity=".7" d="M3 13h18v7H3z"/><rect x="10.5" y="11" width="3" height="4" rx="1" fill="#fff"/></svg>',
+    gear: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3.5h-4L10.7 6a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1l.3 2.5h4l.3-2.5a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>',
+  };
+
   G.currencyIcon = function (id) {
     const col = root.CONFIG.PALETTE[root.CONFIG.CURRENCY_COLOR[id]];
     const dark = '#2a1b2e';

@@ -16,7 +16,7 @@
       lastSeen: Date.now(),
       res: Object.assign({}, C.START),
       ui: { tab: C.DEFAULT_TAB, battleMode: C.BATTLE_MODES[0] },
-      post: { buyMode: C.DEFAULT_BUY_MODE, location: 0, stations: defaultStations() },
+      post: { location: 0, stations: defaultStations() },
     };
   }
 
@@ -47,7 +47,7 @@
       const lv = s.post.stations[id] && s.post.stations[id].level;
       s.post.stations[id] = { level: Number.isFinite(lv) && lv > 0 ? Math.floor(lv) : 0 };
     }
-    if (!C.BUY_MODES.includes(s.post.buyMode)) s.post.buyMode = C.DEFAULT_BUY_MODE;
+    delete s.post.buyMode; // режимы ×1/×10/MAX удалены (этап 1.5)
     if (!C.TABS.includes(s.ui.tab)) s.ui.tab = C.DEFAULT_TAB;
     if (!C.BATTLE_MODES.includes(s.ui.battleMode)) s.ui.battleMode = C.BATTLE_MODES[0];
     return s;

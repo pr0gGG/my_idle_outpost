@@ -3,7 +3,7 @@
   const G = (root.G = root.G || {});
   const MAX_FX = 40;
   const list = [];
-  const COIN_TARGET = { x: 30, y: 20 };
+  const COIN_TARGET = { x: 70, y: -8 };   // счётчик монет в верхней полосе (над холстом сцены)
 
   G.fx = {
     coin(x, y) {

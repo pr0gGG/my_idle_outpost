@@ -6,9 +6,9 @@ var STR = {
   battleModes: { campaign: 'Кампания', sortie: 'Вылазка' },
   post: {
     safe: 'Сейф', milestoneHit: 'Рубеж! ×{m}', level: 'Ур.', perSec: '/с',
-    milestone: '{cur}/{next} → ×{m}', milestoneDone: 'Все рубежи пройдены ✓',
-    buy: 'Купить', upgrade: '+{k} ур.', missing: 'ещё {n}', afterBuy: '{n}/с после покупки',
-    buyModes: { x1: '×1', x10: '×10', max: 'MAX' },
+    buy: '+1 ур.', buyFirst: 'Купить', missing: 'ещё {n}', milestone: '{cur}/{next} → ×{m}', milestoneDone: 'все рубежи пройдены',
+    buyAria: 'Купить уровень. Удерживайте для серии покупок', catalog: 'Каталог улучшений', upgrade: 'Улучшить {name}',
+    profit: '×{n} profit',
   },
   stations: {
     tavern: { name: 'Таверна' }, forge: { name: 'Кузня' }, alchemist: { name: 'Алхимик' },
@@ -23,7 +23,7 @@ var STR = {
   battle: { placeholder: { campaign: 'Здесь будет кампания: волны и боссы (этап 4).', sortie: 'Здесь будет Вылазка (этап 7).' } },
   chests: { placeholder: 'Здесь будут торговые сундуки (этап 6).' },
   inventory: { placeholder: 'Здесь будет снаряжение (этап 5).' },
-  soon: { safe: 'Сейф появится на этапе 7.' },
+  soon: { safe: 'Сейф появится на этапе 7.', catalog: 'Каталог улучшений появится на этапе 2a.' },
   allCurrencies: 'Все валюты',
   saveError: 'Не удалось сохранить игру',
 };

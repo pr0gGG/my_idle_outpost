@@ -158,13 +158,34 @@ test('звёзды: всегда не больше size и без повторо
   for (let lv = 0; lv <= 600; lv += 7) { const w = E.starWindow(lv, MSL); assert.strictEqual(w.length, 5); assert.ok(w.filter((x) => x.next).length <= 1); }
 });
 
+// ---- слоты клиентов ----
+const Slots = require(path.join(root, 'src/slots.js'));
+test('слоты: новому клиенту назначается станция с наименьшим числом ожидающих', () => {
+  assert.strictEqual(Slots.pickStation(['tavern', 'forge', 'alchemist'], {}), 'tavern');
+  assert.strictEqual(Slots.pickStation(['tavern', 'forge', 'alchemist'], { tavern: 1 }), 'forge');
+  assert.strictEqual(Slots.pickStation(['tavern', 'forge', 'alchemist'], { tavern: 1, forge: 1 }), 'alchemist');
+  assert.strictEqual(Slots.pickStation(['tavern', 'forge'], { tavern: 2, forge: 1 }), 'forge');
+  assert.strictEqual(Slots.pickStation([], {}), null);
+});
+test('слоты: при слотов ≥ станций у каждой купленной станции всегда есть клиент (как очередь этапа 1)', () => {
+  const owned = ['tavern', 'forge', 'alchemist'], n = C.CUSTOMERS.slots, slots = [];
+  for (let i = 0; i < n; i++) { const counts = {}; slots.forEach((s) => { counts[s] = (counts[s] || 0) + 1; }); slots.push(Slots.pickStation(owned, counts)); }
+  for (const id of owned) assert.ok(slots.includes(id), id);
+  // после ухода клиента его слот заполняется снова — покрытие сохраняется
+  for (let k = 0; k < 50; k++) { const i = k % n; slots.splice(i, 1); const counts = {}; slots.forEach((s) => { counts[s] = (counts[s] || 0) + 1; }); slots.splice(i, 0, Slots.pickStation(owned, counts)); for (const id of owned) assert.ok(slots.includes(id), 'шаг ' + k); }
+});
+test('слоты: обслуживается самый давний необслуженный клиент станции', () => {
+  const cs = [{ seq: 5, station: 'a', state: 'waiting' }, { seq: 2, station: 'a', state: 'waiting' }, { seq: 1, station: 'a', state: 'served' }, { seq: 0, station: 'b', state: 'waiting' }, null];
+  assert.strictEqual(Slots.activeCustomer(cs, 'a').seq, 2); assert.strictEqual(Slots.activeCustomer(cs, 'b').seq, 0); assert.strictEqual(Slots.activeCustomer(cs, 'c'), null);
+});
+
 // ---- требования к старту ----
 test('старт: хватает на первую станцию сразу', () => { assert.ok(C.START.coins >= E.bulkCost(tavern, 0, 1)); });
 test('старт: первая прибыль после покупки не позже лимита', () => {
-  const cu = C.CUSTOMERS;
-  const worstWalk = (cu.spawnX - 60 /* ближайший x станции */ + 0) / cu.walkSpeed;
-  assert.ok(worstWalk + tavern.cycle <= cu.firstIncomeMaxSec, `${worstWalk + tavern.cycle}s`);
+  const cu = C.CUSTOMERS;   // клиент уже назначен станции, подход к слоту идёт параллельно циклу
+  assert.ok(Math.max(cu.arriveSec, 0) + tavern.cycle <= cu.firstIncomeMaxSec, `${cu.arriveSec + tavern.cycle}s`);
 });
+test('клиенты: слотов не меньше, чем станций в локации', () => { for (const loc of C.LOCATIONS) assert.ok(C.CUSTOMERS.slots >= loc.stations.length); });
 test('конфиг: станции имеют все поля, рубежи по возрастанию', () => {
   for (const st of ST) for (const f of ['id', 'baseCost', 'growth', 'profit', 'cycle', 'color', 'order']) assert.ok(st[f] !== undefined, st.id + '.' + f);
   for (let i = 1; i < MS.length; i++) assert.ok(MS[i].level > MS[i - 1].level);
@@ -179,7 +200,7 @@ test('сохранение: экспорт/импорт сохраняет да�
 test('сохранение: старое сохранение без post дополняется', () => {
   const old = G.defaultState(); delete old.post;
   const s = G.parseSave(JSON.stringify(old));
-  assert.strictEqual(s.post.stations.forge.level, 0); assert.strictEqual(s.post.buyMode, C.DEFAULT_BUY_MODE);
+  assert.strictEqual(s.post.stations.forge.level, 0); assert.strictEqual(s.post.buyMode, undefined);
 });
 test('сохранение: мусор и сохранение из будущего отклоняются', () => {
   assert.throws(() => G.parseSave('junk')); assert.throws(() => G.parseSave('{"saveVersion":99}'));

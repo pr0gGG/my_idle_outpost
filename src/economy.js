@@ -23,12 +23,6 @@
     return k;
   };
 
-  // Сколько уровней покупает режим: 'x1' | 'x10' | 'max'
-  E.buyCount = function (st, level, coins, mode, amounts) {
-    if (mode === 'max') return E.maxAffordable(st, level, coins);
-    return amounts[mode] || 1;
-  };
-
   // Совокупный множитель рубежей на данном уровне
   E.multiplierAt = function (level, milestones) {
     let m = 1;

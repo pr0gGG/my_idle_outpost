@@ -1,0 +1,22 @@
+<!doctype html><meta charset="utf-8"><title>seed</title>
+<script>
+// Dev-страница для скриншотов: записывает сохранение в localStorage и открывает игру.
+// /tools/seed.html?preset=mid&open=forge&tab=post
+const p = new URLSearchParams(location.search);
+const presets = {
+  mid:   { coins: 12400, shovels: 3, brave: 7, levels: { tavern: 60, forge: 26, alchemist: 8 } },
+  late:  { coins: 1.5e19, shovels: 12, brave: 40, levels: { tavern: 60, forge: 26, alchemist: 260 } },
+  fresh: null,
+};
+const pre = presets[p.get('preset') || 'fresh'];
+if (pre) {
+  localStorage.setItem('zastava_save', JSON.stringify({
+    saveVersion: 1, createdAt: Date.now(), lastSeen: Date.now(),
+    res: { coins: pre.coins, shovels: pre.shovels, brave: pre.brave, gems: 0, keys: 0 },
+    ui: { tab: p.get('tab') || 'post', battleMode: 'campaign' },
+    post: { location: 0, stations: Object.fromEntries(Object.entries(pre.levels).map(([k, v]) => [k, { level: v }])) },
+  }));
+} else localStorage.removeItem('zastava_save');
+const rest = new URLSearchParams(p); rest.delete('preset'); rest.delete('tab');
+location.replace('/index.html?' + rest.toString());
+</script>

@@ -377,6 +377,13 @@
     }
   }
 
+  // Случайный облик клиента: тон кожи, цвет одежды, головной убор
+  const pick = (a, r) => a[Math.floor(r() * a.length)];
+  G.randomLook = (r) => ({
+    skin: 1 + Math.floor(r() * 4), cloth: pick(['cloth_teal', 'cloth_red', 'cloth_mustard', 'stone'], r),
+    hat: pick(['hood', 'cap', 'hat', 'band', 'none', 'none'], r), hatColor: pick(['cloth_red', 'cloth_mustard', 'stone'], r),
+  });
+
   G.PostArt = {
     W, use, layout, renderBack, renderMid, renderFront, drawEnemies, LOOKS, WALKER_EXTRA,
     chibi: (c, x, y, o) => { use(c); chibi(x, y, o); },

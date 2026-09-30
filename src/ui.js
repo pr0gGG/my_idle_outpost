@@ -1,32 +1,32 @@
-// DOM-интерфейс: верхняя полоса валют, панели вкладок, нижний таб-бар, красные точки.
+// DOM-интерфейс: верхняя зона (Сейф, валюты, настройки), панели вкладок-заглушек, нижний таб-бар, красные точки, тосты.
 (function (root) {
   const G = (root.G = root.G || {});
   const C = root.CONFIG, S = root.STR;
   const $ = (id) => document.getElementById(id);
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 
-  const refs = { tabBtns: {}, dots: {}, panels: {}, curChips: {}, dropRows: {} };
+  const refs = { tabBtns: {}, dots: {}, panels: {}, curChips: {}, dropRows: {}, incomeEl: null };
   let state, onTabChange;
 
-  // Проверки красных точек. Каждая возвращает true/false; этапы 5–6 подставят настоящие.
+  // Проверки красных точек на вкладках (условия — GAME_DESIGN §12.3). Этапы 2a/5/6 подставят настоящие.
   G.badgeChecks = { post: () => false, battle: () => false, chests: () => false, inventory: () => false };
 
   function buildTopbar() {
     const bar = $('topbar');
-    const btn = el('button', 'cur-bar'); btn.id = 'cur-bar'; btn.setAttribute('aria-haspopup', 'true'); btn.setAttribute('aria-expanded', 'false');
+    const safe = el('button', 'safe', G.icons.safe); safe.id = 'btn-safe'; safe.setAttribute('aria-label', S.post.safe);
+    safe.addEventListener('click', () => G.toast(S.soon.safe));
+    const pills = el('button', 'cur-bar'); pills.id = 'cur-bar'; pills.setAttribute('aria-haspopup', 'true'); pills.setAttribute('aria-expanded', 'false');
+    const gear = el('button', 'gear', G.icons.gear); gear.id = 'btn-settings'; gear.setAttribute('aria-label', S.settings.open);
     const drop = el('div', 'cur-drop'); drop.id = 'cur-drop'; drop.hidden = true;
     drop.appendChild(el('div', 'cur-drop-title', S.allCurrencies));
     for (const id of C.CURRENCIES) {
-      const row = el('div', 'cur-row');
-      row.innerHTML = '<span class="ico">' + G.currencyIcon(id) + '</span><span class="nm">' + S.currencies[id] + '</span>';
+      const row = el('div', 'cur-row', '<span class="ico">' + G.currencyIcon(id) + '</span><span class="nm">' + S.currencies[id] + '</span>');
       const val = el('span', 'val'); row.appendChild(val);
       refs.dropRows[id] = val; drop.appendChild(row);
     }
-    const gear = el('button', 'gear', '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.400-2.400 1a7.600 7.600 0 0 0-1.700-1L15 3.500h-4L10.700 6a7.600 7.600 0 0 0-1.700 1l-2.400-1-2 3.400 2 1.600a7.600 7.600 0 0 0 0 2l-2 1.600 2 3.400 2.400-1a7.600 7.600 0 0 0 1.700 1l.3 2.500h4l.3-2.500a7.600 7.600 0 0 0 1.700-1l2.400 1 2-3.400zM13 15.500a3.500 3.500 0 1 1 0-7 3.500 3.500 0 0 1 0 7z"/></svg>');
-    gear.id = 'btn-settings'; gear.setAttribute('aria-label', S.settings.open);
-    bar.append(btn, gear, drop);
-    refs.curBar = btn; refs.drop = drop;
-    btn.addEventListener('click', (e) => { e.stopPropagation(); toggleDrop(); });
+    bar.append(safe, pills, gear, drop);
+    refs.curBar = pills; refs.drop = drop;
+    pills.addEventListener('click', (e) => { e.stopPropagation(); toggleDrop(); G.updateCurrencies(); });
     document.addEventListener('click', (e) => { if (!refs.drop.hidden && !refs.drop.contains(e.target)) toggleDrop(false); });
   }
 
@@ -36,27 +36,21 @@
     refs.curBar.setAttribute('aria-expanded', String(open));
   }
 
+  // Валюты текущей вкладки — «таблетки» с крупными иконками
   function renderCurChips() {
-    const ids = C.TAB_CURRENCIES[state.ui.tab];
-    refs.curBar.innerHTML = '';
-    refs.curChips = {};
-    refs.incomeEl = null;
-    for (const id of ids) {
-      const chip = el('span', 'chip', '<span class="ico">' + G.currencyIcon(id) + '</span>');
+    refs.curBar.innerHTML = ''; refs.curChips = {}; refs.incomeEl = null;
+    for (const id of C.TAB_CURRENCIES[state.ui.tab]) {
+      const chip = el('span', 'pill', '<span class="ico">' + G.currencyIcon(id) + '</span>');
       const v = el('b', 'val'); chip.appendChild(v);
       if (id === 'coins' && state.ui.tab === 'post') { refs.incomeEl = el('small', 'income'); chip.appendChild(refs.incomeEl); }
       refs.curBar.appendChild(chip); refs.curChips[id] = v;
     }
-    refs.curBar.appendChild(el('span', 'caret', '▾'));
     refs.curBar.setAttribute('aria-label', S.allCurrencies);
   }
 
+  // Панели вкладок-заглушек: у «Поста» панели нет — вся сцена интерактивна
   function buildPanels() {
     const host = $('panel');
-    // Пост
-    const post = el('section', 'tab-panel'); post.dataset.tab = 'post';
-    G.buildPostPanel(post, state);
-    // Бой
     const battle = el('section', 'tab-panel'); battle.dataset.tab = 'battle';
     const seg = el('div', 'segment'); seg.setAttribute('role', 'tablist');
     const hint = el('p', 'hint');
@@ -67,18 +61,14 @@
     }
     battle.append(seg, hint);
     refs.seg = seg; refs.battleHint = hint;
-    // Сундуки, Инвентарь
     const chests = el('section', 'tab-panel'); chests.dataset.tab = 'chests'; chests.appendChild(el('p', 'hint', S.chests.placeholder));
     const inv = el('section', 'tab-panel'); inv.dataset.tab = 'inventory'; inv.appendChild(el('p', 'hint', S.inventory.placeholder));
-    for (const p of [post, battle, chests, inv]) { host.appendChild(p); refs.panels[p.dataset.tab] = p; }
+    for (const p of [battle, chests, inv]) { host.appendChild(p); refs.panels[p.dataset.tab] = p; }
   }
 
   function renderBattleMode() {
     const m = state.ui.battleMode;
-    for (const b of refs.seg.children) {
-      const on = b.dataset.mode === m;
-      b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on));
-    }
+    for (const b of refs.seg.children) { const on = b.dataset.mode === m; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); }
     refs.battleHint.textContent = S.battle.placeholder[m];
   }
 
@@ -99,8 +89,11 @@
     for (const t of C.TABS) {
       refs.tabBtns[t].classList.toggle('active', t === id);
       refs.tabBtns[t].setAttribute('aria-current', t === id ? 'page' : 'false');
-      refs.panels[t].hidden = t !== id;
+      if (refs.panels[t]) refs.panels[t].hidden = t !== id;
     }
+    $('panel').hidden = id === 'post';
+    $('hud').hidden = id !== 'post';
+    if (G.closeCard) G.closeCard();
     toggleDrop(false);
     renderCurChips();
     G.updateCurrencies();
@@ -113,9 +106,7 @@
     if (!refs.drop.hidden) for (const id in refs.dropRows) refs.dropRows[id].textContent = G.fmt(state.res[id]);
   };
 
-  G.updateBadges = function () {
-    for (const id of C.TABS) refs.dots[id].hidden = !G.badgeChecks[id]();
-  };
+  G.updateBadges = function () { for (const id of C.TABS) refs.dots[id].hidden = !G.badgeChecks[id](); };
 
   let toastTimer;
   G.toast = function (text) {
@@ -128,8 +119,7 @@
     buildTopbar(); buildPanels(); buildTabbar();
     renderBattleMode();
     G.initSettings(state);
-    // при открытии списка сразу показать актуальные значения
-    refs.curBar.addEventListener('click', G.updateCurrencies);
+    G.buildHud(state);
     G.setTab(state.ui.tab);
     G.updateBadges();
   };
