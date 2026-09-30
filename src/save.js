@@ -3,6 +3,12 @@
   const G = (root.G = root.G || {});
   const C = root.CONFIG;
 
+  function defaultStations() {
+    const out = {};
+    for (const loc of C.LOCATIONS) for (const st of loc.stations) out[st.id] = { level: 0 };
+    return out;
+  }
+
   function defaultState() {
     return {
       saveVersion: C.SAVE_VERSION,
@@ -10,6 +16,7 @@
       lastSeen: Date.now(),
       res: Object.assign({}, C.START),
       ui: { tab: C.DEFAULT_TAB, battleMode: C.BATTLE_MODES[0] },
+      post: { buyMode: C.DEFAULT_BUY_MODE, location: 0, stations: defaultStations() },
     };
   }
 
@@ -33,6 +40,14 @@
     const s = Object.assign(base, loaded);
     s.res = Object.assign(base.res, loaded.res);
     s.ui = Object.assign(base.ui, loaded.ui);
+    const lp = loaded.post || {};
+    s.post = Object.assign({}, base.post, lp);
+    s.post.stations = Object.assign({}, base.post.stations, lp.stations);
+    for (const id in s.post.stations) {
+      const lv = s.post.stations[id] && s.post.stations[id].level;
+      s.post.stations[id] = { level: Number.isFinite(lv) && lv > 0 ? Math.floor(lv) : 0 };
+    }
+    if (!C.BUY_MODES.includes(s.post.buyMode)) s.post.buyMode = C.DEFAULT_BUY_MODE;
     if (!C.TABS.includes(s.ui.tab)) s.ui.tab = C.DEFAULT_TAB;
     if (!C.BATTLE_MODES.includes(s.ui.battleMode)) s.ui.battleMode = C.BATTLE_MODES[0];
     return s;
@@ -54,6 +69,7 @@
   };
 
   G.save = function (state) {
+    if (G.suppressSave) return true; // после импорта: не затирать записанное сохранение
     state.lastSeen = Date.now();
     try { localStorage.setItem(C.SAVE_KEY, JSON.stringify(state)); return true; }
     catch (e) { console.warn('save failed', e); return false; }

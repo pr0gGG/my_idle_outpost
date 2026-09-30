@@ -22,7 +22,9 @@
       const val = el('span', 'val'); row.appendChild(val);
       refs.dropRows[id] = val; drop.appendChild(row);
     }
-    bar.append(btn, drop);
+    const gear = el('button', 'gear', '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.400-2.400 1a7.600 7.600 0 0 0-1.700-1L15 3.500h-4L10.700 6a7.600 7.600 0 0 0-1.700 1l-2.400-1-2 3.400 2 1.600a7.600 7.600 0 0 0 0 2l-2 1.600 2 3.400 2.400-1a7.600 7.600 0 0 0 1.700 1l.3 2.500h4l.3-2.500a7.600 7.600 0 0 0 1.700-1l2.400 1 2-3.400zM13 15.500a3.500 3.500 0 1 1 0-7 3.500 3.500 0 0 1 0 7z"/></svg>');
+    gear.id = 'btn-settings'; gear.setAttribute('aria-label', S.settings.open);
+    bar.append(btn, gear, drop);
     refs.curBar = btn; refs.drop = drop;
     btn.addEventListener('click', (e) => { e.stopPropagation(); toggleDrop(); });
     document.addEventListener('click', (e) => { if (!refs.drop.hidden && !refs.drop.contains(e.target)) toggleDrop(false); });
@@ -38,9 +40,11 @@
     const ids = C.TAB_CURRENCIES[state.ui.tab];
     refs.curBar.innerHTML = '';
     refs.curChips = {};
+    refs.incomeEl = null;
     for (const id of ids) {
       const chip = el('span', 'chip', '<span class="ico">' + G.currencyIcon(id) + '</span>');
       const v = el('b', 'val'); chip.appendChild(v);
+      if (id === 'coins' && state.ui.tab === 'post') { refs.incomeEl = el('small', 'income'); chip.appendChild(refs.incomeEl); }
       refs.curBar.appendChild(chip); refs.curChips[id] = v;
     }
     refs.curBar.appendChild(el('span', 'caret', '▾'));
@@ -51,9 +55,7 @@
     const host = $('panel');
     // Пост
     const post = el('section', 'tab-panel'); post.dataset.tab = 'post';
-    const safe = el('button', 'btn', S.post.safe); safe.id = 'btn-safe';
-    safe.addEventListener('click', () => G.toast(S.soon.safe));
-    post.append(el('p', 'hint', S.post.placeholder), safe);
+    G.buildPostPanel(post, state);
     // Бой
     const battle = el('section', 'tab-panel'); battle.dataset.tab = 'battle';
     const seg = el('div', 'segment'); seg.setAttribute('role', 'tablist');
@@ -107,6 +109,7 @@
 
   G.updateCurrencies = function () {
     for (const id in refs.curChips) refs.curChips[id].textContent = G.fmt(state.res[id]);
+    if (refs.incomeEl) refs.incomeEl.textContent = '+' + G.fmt(G.post.totalIncomePerSec()) + S.post.perSec;
     if (!refs.drop.hidden) for (const id in refs.dropRows) refs.dropRows[id].textContent = G.fmt(state.res[id]);
   };
 
@@ -124,6 +127,7 @@
     state = st; onTabChange = opts.onTabChange;
     buildTopbar(); buildPanels(); buildTabbar();
     renderBattleMode();
+    G.initSettings(state);
     // при открытии списка сразу показать актуальные значения
     refs.curBar.addEventListener('click', G.updateCurrencies);
     G.setTab(state.ui.tab);

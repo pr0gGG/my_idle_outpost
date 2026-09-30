@@ -31,10 +31,12 @@
   let nightTarget = night;
   const transSec = reduceMotion ? 0.3 : C.DAYNIGHT_TRANSITION_SEC;
 
+  G.post.init(state);
   G.initUI(state, { onTabChange: (tab) => { nightTarget = isNight(tab) ? 1 : 0; } });
+  G.refreshPost();
   resize();
 
-  let last = performance.now(), saveAcc = 0, notifyAcc = 0, time = 0;
+  let last = performance.now(), saveAcc = 0, notifyAcc = 0, uiAcc = 0, time = 0;
   function frame(now) {
     const dt = Math.min(C.MAX_DT, (now - last) / 1000); last = now;
     time += dt;
@@ -42,16 +44,27 @@
       const step = dt / transSec;
       night = night < nightTarget ? Math.min(nightTarget, night + step) : Math.max(nightTarget, night - step);
     }
-    saveAcc += dt; notifyAcc += dt;
+    saveAcc += dt; notifyAcc += dt; uiAcc += dt;
+    G.post.update(dt);
     if (saveAcc >= C.AUTOSAVE_SEC) { saveAcc = 0; G.save(state); }
     if (notifyAcc >= C.NOTIFY_CHECK_SEC) { notifyAcc = 0; G.updateBadges(); }
 
     ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
     G.drawScene(ctx, night, time);
+    if (night < 0.5) G.post.draw(ctx, time);
+    if (uiAcc >= 0.15) { uiAcc = 0; G.refreshPost(); }
     G.updateCurrencies();
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
+
+  // Нажатие по сцене (чаевые): экранные координаты → логические
+  canvas.addEventListener('pointerdown', (e) => {
+    if (night >= 0.5) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width * V.W, y = (e.clientY - rect.top) / rect.height * (V.H * V.SCENE_FRAC);
+    if (G.post.tap(x, y)) { G.refreshPost(); e.preventDefault(); }
+  });
 
   // Сохранение при сворачивании/закрытии
   document.addEventListener('visibilitychange', () => { if (document.hidden) G.save(state); });
