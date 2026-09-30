@@ -47,6 +47,9 @@ var CONFIG = {
     { level: 10, mult: 2 }, { level: 25, mult: 2 }, { level: 50, mult: 2 },
     { level: 100, mult: 3 }, { level: 200, mult: 3 },
   ],
+  // Покупка уровня станции (новый дизайн, этап 1.5): тап = +1, долгое нажатие = максимум. Режимы ×1/×10/MAX живой игры
+  // (BUY_MODES, BUY_AMOUNT, state.post.buyMode) уходят при переносе на новую компоновку.
+  BUY: { longPressMs: 450 },
   BUY_MODES: ['x1', 'x10', 'max'],
   BUY_AMOUNT: { x1: 1, x10: 10 },
   DEFAULT_BUY_MODE: 'x1',

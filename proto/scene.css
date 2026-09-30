@@ -43,32 +43,27 @@ button { font-family: inherit; cursor: pointer; }
 .stn-up svg { width: 15px; height: 15px; }
 @keyframes pulse { 50% { transform: scale(1.08); } }
 
-/* карточка станции (компактная) */
-.card { position: absolute; width: 236px; padding: 6px 10px 4px; border-radius: 14px; background: var(--ui-panel); box-shadow: 0 6px 18px rgba(0,0,0,.45); }
+/* карточка станции: узкий плавающий тултип (216 px), хвостик к станции */
+.card { position: absolute; width: 216px; padding: 6px 8px 5px; border-radius: 12px; background: var(--ui-panel); box-shadow: 0 5px 14px rgba(0,0,0,.45);
+  display: grid; grid-template-columns: 1fr 80px; grid-template-rows: auto 22px 18px; column-gap: 6px; row-gap: 3px; }
 .card::before { content: ""; position: absolute; top: -7px; left: var(--tail, 50%); margin-left: -8px; border: 8px solid transparent; border-top: 0; border-bottom-color: var(--ui-panel); }
-.card h3 { margin: 0; height: 22px; display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 15px; }
+.card h3 { grid-column: 1 / 3; margin: 0; height: 18px; display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 15px; }
 .card h3 .lv { font-size: 11px; padding: 0 7px; line-height: 17px; border-radius: 9px; background: var(--ui-yellow); color: #2b2d33; font-weight: 800; }
-.card h3 .inc { margin-left: auto; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; opacity: .9; }
-/* звёзды рубежей и прогресс — один блок: дорожка проходит через звёзды */
-.rb { position: relative; display: flex; height: 38px; margin-top: 2px; }
-.rb .track { position: absolute; left: 0; right: 0; top: 7px; height: 6px; border-radius: 3px; background: var(--ui-bg); overflow: hidden; }
-.rb .track i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ui-blue); border-radius: 3px; }
-.star { position: relative; flex: 1; text-align: center; font-size: 10px; font-weight: 800; line-height: 1; opacity: .8; }
-.star svg { display: block; width: 20px; height: 20px; margin: 0 auto 2px; filter: drop-shadow(0 0 0 #000); }
-.star.on { opacity: 1; }
-.star.next { opacity: 1; color: var(--ui-yellow); }
+/* звёзды рубежей — одна строка без подписей (значения — в строке прогресса) */
+.stars { grid-column: 1; grid-row: 2; display: flex; justify-content: space-between; align-items: center; padding: 0 1px; }
+.star svg { display: block; width: 20px; height: 20px; }
 .star.next svg { animation: pulse 1.2s ease-in-out infinite; }
-.card .eff { margin: 0 0 2px; font-size: 11px; opacity: .75; text-align: center; white-space: nowrap; }
-/* кнопки: зона нажатия 44×44 (прозрачные поля 6 px сверху и снизу), видимая часть 32 px */
-.row { display: flex; gap: 6px; align-items: center; }
-.seg { display: flex; }
-.seg button, .buy { height: 44px; border: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; background-clip: padding-box; font-weight: 800; }
-.seg button { min-width: 44px; padding: 0; background-color: var(--ui-bg); color: var(--ui-text); font-size: 12px; }
-.seg button:first-child { border-radius: 14px 0 0 14px; } .seg button:last-child { border-radius: 0 14px 14px 0; }
-.seg button.on { background-color: var(--ui-panel-light); }
-.buy { flex: 1; min-width: 44px; padding: 0 4px; border-radius: 14px; background-color: var(--ok); color: #fff; font-size: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; white-space: nowrap; }
-.buy small { font-size: 11px; font-weight: 800; display: flex; align-items: center; gap: 3px; }
-.buy small svg { width: 12px; height: 12px; }
+.bar { grid-column: 1; grid-row: 3; position: relative; height: 18px; border-radius: 9px; background: var(--ui-bg); overflow: hidden; }
+.bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ui-blue); border-radius: 9px; }
+.bar span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 10px; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* кнопка покупки: 80×44 (зона нажатия), видимая часть 40 px */
+.buy { grid-column: 2; grid-row: 2 / 4; position: relative; overflow: hidden; height: 44px; align-self: center; margin: -1px 0; border: 0; border-top: 2px solid transparent; border-bottom: 2px solid transparent; background-clip: padding-box; border-radius: 12px; background-color: var(--ok); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; white-space: nowrap; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+.buy .b1 { font-size: 13px; font-weight: 900; }
+.buy small { font-size: 12px; font-weight: 800; display: flex; align-items: center; gap: 3px; }
+.buy small svg { width: 13px; height: 13px; }
+.buy.off { background-color: var(--disabled); color: #d8dbe2; }
+.buy::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(255,255,255,.32); }
+.buy.holding::after { width: 100%; transition: width .45s linear; }
 
 /* нижняя панель */
 .tabbar { position: absolute; left: 0; bottom: 0; width: 100%; height: 56px; display: flex; background: var(--ui-bg); border-top: 1px solid rgba(255,255,255,.08); }

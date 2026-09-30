@@ -55,11 +55,22 @@ test('MAX: cost(k) <= coins < cost(k+1) на случайных данных', (
     assert.ok(E.bulkCost(st, lvl, k + 1) > coins, `not max: ${st.id} lvl ${lvl} coins ${coins} k ${k}`);
   }
 });
-test('buyCount: режимы x1, x10, max', () => {
+test('покупка: тап = ровно 1 уровень (x1), долгое нажатие = max', () => {
   assert.strictEqual(E.buyCount(tavern, 0, 1e6, 'x1', C.BUY_AMOUNT), 1);
-  assert.strictEqual(E.buyCount(tavern, 0, 1e6, 'x10', C.BUY_AMOUNT), 10);
   assert.strictEqual(E.buyCount(tavern, 0, 1e6, 'max', C.BUY_AMOUNT), E.maxAffordable(tavern, 0, 1e6));
 });
+test('покупка: долгое нажатие покупает столько, сколько хватает, и оставляет остаток меньше цены следующего', () => {
+  for (const coins of [10, 25, 100, 5e3, 1e9]) {
+    const k = E.buyCount(tavern, 3, coins, 'max', C.BUY_AMOUNT);
+    if (k > 0) assert.ok(E.bulkCost(tavern, 3, k) <= coins);
+    assert.ok(coins - E.bulkCost(tavern, 3, k) < E.stepCost(tavern, 3 + k) + 1);
+  }
+});
+test('покупка: хватает ровно на 1 уровень — max = 1; не хватает — 0 (оба жеста ничего не покупают)', () => {
+  const c1 = E.bulkCost(tavern, 7, 1);
+  assert.strictEqual(E.maxAffordable(tavern, 7, c1), 1); assert.strictEqual(E.maxAffordable(tavern, 7, c1 - 1), 0);
+});
+test('конфиг: порог долгого нажатия задан', () => { assert.ok(C.BUY.longPressMs >= 300 && C.BUY.longPressMs <= 800); });
 
 // ---- рубежи и доход ----
 test('рубежи: множитель растёт ровно на порогах', () => {

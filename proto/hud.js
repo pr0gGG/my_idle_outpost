@@ -9,9 +9,10 @@
   const S = window.__scene;
   const tabs = [['post', 'Пост'], ['battle', 'Бой'], ['chests', 'Сундуки'], ['inventory', 'Инвентарь']];
 
+  const CARDS_COINS = new URLSearchParams(location.search).get('card') === 'alchemist' ? 1.5e19 : 12400;
   const h = [];
   h.push('<div class="topbar"><button class="safe" aria-label="Сейф">' + SAFE + '</button>' +
-    '<div class="pills"><div class="pill"><span class="ico">' + G.currencyIcon('coins') + '</span><span>12.4K</span><small>+136/с</small></div></div>' +
+    '<div class="pills"><div class="pill"><span class="ico">' + G.currencyIcon('coins') + '</span><span>' + fmt(CARDS_COINS) + '</span><small>+136/с</small></div></div>' +
     '<button class="gear" aria-label="Настройки">' + GEAR + '</button></div>');
   // квесты
   h.push('<div class="quest-nodes"><i class="qn done">✓</i><i class="ql done"></i><i class="qn done">✓</i><i class="ql done"></i><i class="qn cur">3</i><i class="ql"></i><i class="qn">4</i><i class="ql"></i><i class="qn pin">📍</i></div>');
@@ -22,31 +23,29 @@
   const s0 = S.stations[0];
   h.push('<button class="stn-up" style="left:' + (s0.x - 22) + 'px;top:' + (top + s0.y - 126 - 22) + 'px" aria-label="Улучшить"><span class="upcircle">' + ARROW + '</span></button>');
 
-  // карточка станции: ?card=forge (по умолчанию) | alchemist
+  // карточка станции: ?card=forge (по умолчанию) | alchemist. Узкий плавающий тултип с хвостиком к станции.
   const which = new URLSearchParams(location.search).get('card') === 'alchemist' ? 'alchemist' : 'forge';
   const MSL = [10, 25, 50, 100, 200, 250, 500];
+  const STN = CONFIG.LOCATIONS[0].stations;
   const CARDS = {
-    forge:     { idx: 1, name: 'Кузня',   level: 26,  next: 50,  effect: 'до 50 ур.: цена товара ×3 · цикл −15%', income: fmt(24000), cycle: '3.2с', cost: 379 },
-    alchemist: { idx: 2, name: 'Алхимик', level: 260, next: 500, effect: 'до 500 ур.: цена товара ×10 · цикл −25%', income: fmt(7.5e7), cycle: '2.2с', cost: fmt(6.4e9) },
+    forge:     { idx: 1, def: STN[1], name: 'Кузня',   level: 26,  next: 50,  nextTxt: '×3 · −15%',  coins: 12400 },
+    alchemist: { idx: 2, def: STN[2], name: 'Алхимик', level: 260, next: 500, nextTxt: '×10 · −25%', coins: 1.5e19 },
   };
   const c = CARDS[which], st = S.stations[c.idx];
   const win = Economy.starWindow(c.level, MSL, 5);
-  const cardW = 236, cardLeft = Math.max(6, Math.min(360 - cardW - 6 - 64 - 4, st.x - cardW / 2));
+  const price = Economy.bulkCost(c.def, c.level, 1);
+  const afford = c.coins >= price;
+  const cardW = 216, cardLeft = Math.max(6, Math.min(360 - cardW - 6 - 64 - 4, st.x - cardW / 2));
   const tail = Math.max(18, Math.min(cardW - 18, st.x - cardLeft));
-  // заполнение дорожки: звёзды стоят в центрах пяти колонок (10%, 30%, …, 90%); до ближайшей звезды — пропорционально уровню
-  const pos = (i) => 0.1 + 0.2 * i;
-  const rw = win.filter((w) => w.reached).length;
-  let fill;
-  if (rw === win.length) fill = 1;
-  else if (rw === 0) fill = pos(0) * c.level / win[0].level;
-  else fill = pos(rw - 1) + (pos(rw) - pos(rw - 1)) * (c.level - win[rw - 1].level) / (win[rw].level - win[rw - 1].level);
+  const pct = Math.min(100, c.level / c.next * 100);
+  const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 10V7a5 5 0 0 1 10 0v3h1v11H6V10zm2 0h6V7a3 3 0 0 0-6 0z"/></svg>';
   h.push('<div class="card" data-card="' + which + '" style="left:' + cardLeft + 'px;top:' + (top + st.y + 8) + 'px;--tail:' + tail + 'px">' +
-    '<h3>' + c.name + '<span class="lv">Ур. ' + c.level + '</span><span class="inc">' + c.income + '/с · ' + c.cycle + '</span></h3>' +
-    '<div class="rb"><div class="track"><i style="width:' + (fill * 100).toFixed(1) + '%"></i></div>' +
-    win.map((w) => '<div class="star' + (w.reached ? ' on' : '') + (w.next ? ' next' : '') + '">' + STAR(w.reached) + '<span>' + (w.next ? c.level + '/' + w.level : w.level) + '</span></div>').join('') + '</div>' +
-    '<p class="eff">' + c.effect + '</p>' +
-    '<div class="row"><div class="seg"><button class="on">×1</button><button>×10</button><button>MAX</button></div>' +
-    '<button class="buy">+1 ур.<small>' + G.currencyIcon('coins') + c.cost + '</small></button></div></div>');
+    '<h3>' + c.name + '<span class="lv">Ур. ' + c.level + '</span></h3>' +
+    '<div class="stars">' + win.map((w) => '<span class="star' + (w.reached ? ' on' : '') + (w.next ? ' next' : '') + '">' + STAR(w.reached) + '</span>').join('') + '</div>' +
+    '<div class="bar"><i style="width:' + pct + '%"></i><span>' + c.level + '/' + c.next + ' → ' + c.nextTxt + '</span></div>' +
+    '<button class="buy' + (afford ? '' : ' off') + '" aria-label="Купить уровень. Долгое нажатие — максимум"><b class="b1">+1 ур.</b><small class="b2">' +
+      (afford ? G.currencyIcon('coins') + fmt(price) : LOCK + 'ещё ' + fmt(price - c.coins)) + '</small></button></div>');
+
 
   // большая кнопка каталога
   h.push('<button class="catalog upcircle" aria-label="Каталог улучшений">' + ARROW + '<span class="badge">3</span></button>');
@@ -54,9 +53,24 @@
   h.push('<nav class="tabbar">' + tabs.map(([id, name], i) => '<button class="tab' + (i === 0 ? ' on' : '') + '">' + G.tabIcons[id] + '<span>' + name + '</span>' + (id === 'chests' ? '<i class="dot"></i>' : '') + '</button>').join('') + '</nav>');
   hud.innerHTML = h.join('');
 
+  // Покупка уровня: короткое нажатие = +1 уровень, долгое (≥450 мс) = максимум доступного (Economy.maxAffordable).
+  (function () {
+    const btn = document.querySelector('.buy'); if (!btn || btn.classList.contains('off')) return;
+    const b1 = btn.querySelector('.b1'); let timer, long = false, t0;
+    const say = (txt) => { b1.textContent = txt; clearTimeout(say.t); say.t = setTimeout(() => { b1.textContent = '+1 ур.'; }, 1100); };
+    btn.addEventListener('pointerdown', () => { long = false; btn.classList.add('holding'); timer = setTimeout(() => { long = true; const n = Economy.maxAffordable(c.def, c.level, c.coins); say('+' + n + ' ур. MAX'); btn.classList.remove('holding'); }, CONFIG.BUY.longPressMs); });
+    const end = () => { clearTimeout(timer); btn.classList.remove('holding'); };
+    btn.addEventListener('pointerup', () => { end(); if (!long) say('куплено +1'); });
+    btn.addEventListener('pointerleave', end); btn.addEventListener('pointercancel', end);
+    btn.addEventListener('contextmenu', (e) => e.preventDefault());
+  })();
+
   // масштаб под окно
   function fit() {
     const vp = document.getElementById('viewport'), ph = document.getElementById('phone');
+    if (new URLSearchParams(location.search).has('shot')) { // режим съёмки: телефон 360×760 в левом верхнем углу без масштаба
+      ph.style.left = '0'; ph.style.top = '0'; ph.style.transform = 'none'; return;
+    }
     const s = Math.min(vp.clientWidth / 360, vp.clientHeight / 760);
     ph.style.transform = 'translate(-50%,-50%) scale(' + s + ')';
   }
