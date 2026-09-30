@@ -70,8 +70,12 @@
     // уши
     if (o.ears === 'pointy') {
       ctx.fillStyle = skin;
-      ctx.beginPath(); ctx.moveTo(-10, -36); ctx.lineTo(-21, -41); ctx.lineTo(-10, -28); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(10, -36); ctx.lineTo(21, -41); ctx.lineTo(10, -28); ctx.fill();
+      // узкие уши, торчат вверх и назад (не широкие горизонтальные)
+      for (const sx of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(sx * 9.5, -38); ctx.quadraticCurveTo(sx * 13, -47, sx * 12, -55); ctx.quadraticCurveTo(sx * 8.5, -47, sx * 6.5, -43); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = dark(skin, 0.2); ctx.beginPath(); ctx.moveTo(sx * 9.2, -40); ctx.quadraticCurveTo(sx * 11.4, -46, sx * 11.2, -51); ctx.quadraticCurveTo(sx * 9, -46, sx * 8, -43); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = skin;
+      }
     }
     // голова (с тёмной нижней кромкой)
     ctx.save(); ctx.beginPath(); ctx.arc(0, -34, 13, 0, Math.PI * 2); ctx.clip();
@@ -382,6 +386,6 @@
   // товар на подносе рабочего уже на прилавке у слота 2
   coinTip(270, Y.roadEnd - 10);
   floatText(300, 318, '+128', 0.95);
-  floatText(60, 306, '+36', 0.6);
+  // у Таверны активен красный кружок → цифра дохода скрыта (правило ART_GUIDE §8а)
   window.__scene = { W, H, Y, SLOT_X, stations: [{ x: 60, y: 428 }, { x: 180, y: 448 }, { x: 300, y: 428 }] };
 })();

@@ -44,6 +44,21 @@
     return null;
   };
 
+  // Окно звёзд рубежей в карточке станции: всегда `size` звёзд (или все рубежи, если их меньше).
+  // Окно начинается за два достигнутых рубежа до текущего и упирается в конец списка:
+  //   start = clamp(достигнуто − 2, 0, всего − size)
+  // Когда впереди осталось меньше `size` рубежей, окно не сжимается, а показывает последние `size`:
+  // пройденные залиты, ближайший (next) пульсирует, при всех пройденных next нет (станция на пределе рубежей).
+  E.starWindow = function (level, milestoneLevels, size) {
+    size = size || 5;
+    const total = milestoneLevels.length;
+    const reached = milestoneLevels.filter((l) => level >= l).length;
+    const start = Math.max(0, Math.min(reached - 2, total - size));
+    return milestoneLevels.slice(start, start + size).map((l, i) => ({
+      level: l, reached: level >= l, next: start + i === reached,
+    }));
+  };
+
   E.incomePerCycle = (st, level, milestones) => (level <= 0 ? 0 : st.profit * level * E.multiplierAt(level, milestones));
   E.incomePerSec = (st, level, milestones) => E.incomePerCycle(st, level, milestones) / st.cycle;
 

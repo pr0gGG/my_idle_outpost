@@ -17,21 +17,31 @@
   h.push('<div class="quest-nodes"><i class="qn done">✓</i><i class="ql done"></i><i class="qn done">✓</i><i class="ql done"></i><i class="qn cur">3</i><i class="ql"></i><i class="qn">4</i><i class="ql"></i><i class="qn pin">📍</i></div>');
   h.push('<div class="profit">×1 profit</div>');
   h.push('<div class="quest-pill"><span class="qt">Собери чаевые</span><span class="qp">3/5</span><span class="qr">' + G.currencyIcon('coins') + '120</span></div>');
-  // красный кружок над Таверной (можно улучшить)
+  // красный кружок строго над Таверной (центр по оси станции, над крышей). Зона нажатия 44×44.
   const top = 44; // смещение сцены
-  h.push('<button class="stn-up upcircle" style="left:' + (S.stations[0].x - 34) + 'px;top:' + (top + S.stations[0].y - 160) + 'px" aria-label="Улучшить">' + ARROW + '</button>');
-  // карточка Кузни
-  const cx = S.stations[1].x, cy = top + S.stations[1].y + 10;
-  const cardLeft = Math.max(6, Math.min(360 - 216 - 6, cx - 108));
-  const stars = [[10, 1], [25, 1], [50, 0, 1], [100, 0], [200, 0]];
-  h.push('<div class="card" style="left:' + cardLeft + 'px;top:' + cy + 'px">' +
-    '<h3>Кузня <span class="lv">Ур. 26</span><span class="sub">растёт: цена товара</span></h3>' +
-    ''+
-    '<div class="stars">' + stars.map(([lv, on, next]) => '<div class="star' + (on ? ' on' : '') + (next ? ' next' : '') + '">' + STAR(on) + lv + '</div>').join('') + '</div>' +
-    '<div class="bar"><i style="width:' + (26 / 50 * 100) + '%"></i><span>26/50 → ×3 · −15%</span></div>' +
-    '<div class="stats"><div class="stat">Доход<b>' + fmt(24000) + '/с</b></div><div class="stat">Цикл<b>3.2 с</b></div></div>' +
+  const s0 = S.stations[0];
+  h.push('<button class="stn-up" style="left:' + (s0.x - 22) + 'px;top:' + (top + s0.y - 126 - 22) + 'px" aria-label="Улучшить"><span class="upcircle">' + ARROW + '</span></button>');
+
+  // карточка станции: ?card=forge (по умолчанию) | alchemist
+  const which = new URLSearchParams(location.search).get('card') === 'alchemist' ? 'alchemist' : 'forge';
+  const MSL = [10, 25, 50, 100, 200, 250, 500];
+  const CARDS = {
+    forge:     { idx: 1, name: 'Кузня',   level: 26,  next: 50,  nextTxt: '×3 · −15%', income: fmt(24000), cycle: '3.2 с', cost: 379, sub: 'цена товара' },
+    alchemist: { idx: 2, name: 'Алхимик', level: 260, next: 500, nextTxt: '×10 · −25%', income: fmt(7.5e7), cycle: '2.2 с', cost: fmt(6.4e9), sub: 'цена товара' },
+  };
+  const c = CARDS[which], st = S.stations[c.idx];
+  const win = Economy.starWindow(c.level, MSL, 5);
+  const cardW = 244, cardLeft = Math.max(6, Math.min(360 - cardW - 6 - 64 - 4, st.x - cardW / 2));
+  const tail = Math.max(18, Math.min(cardW - 18, st.x - cardLeft));
+  const pct = Math.min(100, c.level / c.next * 100); // заполнение = уровень / ближайший рубеж, как подпись
+  h.push('<div class="card" data-card="' + which + '" style="left:' + cardLeft + 'px;top:' + (top + st.y + 10) + 'px;--tail:' + tail + 'px">' +
+    '<h3>' + c.name + ' <span class="lv">Ур. ' + c.level + '</span><span class="sub">растёт: ' + c.sub + '</span></h3>' +
+    '<div class="stars">' + win.map((w) => '<div class="star' + (w.reached ? ' on' : '') + (w.next ? ' next' : '') + '">' + STAR(w.reached) + w.level + '</div>').join('') + '</div>' +
+    '<div class="bar"><i style="width:' + pct + '%"></i><span>' + c.level + '/' + c.next + ' → ' + c.nextTxt + '</span></div>' +
+    '<div class="stats"><div class="stat">Доход<b>' + c.income + '/с</b></div><div class="stat">Цикл<b>' + c.cycle + '</b></div></div>' +
     '<div class="row"><div class="seg"><button class="on">×1</button><button>×10</button><button>MAX</button></div>' +
-    '<button class="buy">+1 ур.<small>' + G.currencyIcon('coins') + fmt(379) + '</small></button></div></div>');
+    '<button class="buy">+1 ур.<small>' + G.currencyIcon('coins') + c.cost + '</small></button></div></div>');
+
   // большая кнопка каталога
   h.push('<button class="catalog upcircle" aria-label="Каталог улучшений">' + ARROW + '<span class="badge">3</span></button>');
   // таб-бар

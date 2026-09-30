@@ -82,6 +82,24 @@ test('рубеж выгоднее соседнего уровня (скачок 
   for (const m of MS) assert.ok(E.incomePerCycle(tavern, m.level, MS) > E.incomePerCycle(tavern, m.level - 1, MS) * (m.mult * 0.9));
 });
 
+// ---- окно звёзд рубежей ----
+const MSL = [10, 25, 50, 100, 200, 250, 500];
+const flags = (w) => w.map((x) => x.level + (x.reached ? '*' : '') + (x.next ? '>' : '')).join(' ');
+test('звёзды: начало игры — первые 5, ближайший 10', () => { assert.strictEqual(flags(E.starWindow(0, MSL)), '10> 25 50 100 200'); });
+test('звёзды: ур. 26 — два пройденных, ближайший 50', () => { assert.strictEqual(flags(E.starWindow(26, MSL)), '10* 25* 50> 100 200'); });
+test('звёзды: ур. 100 — окно сдвигается за двумя пройденными', () => { assert.strictEqual(flags(E.starWindow(100, MSL)), '50* 100* 200> 250 500'); });
+test('звёзды: осталось меньше 5 — окно упирается в конец (ур. 260)', () => { assert.strictEqual(flags(E.starWindow(260, MSL)), '50* 100* 200* 250* 500>'); });
+test('звёзды: всё пройдено — без ближайшего', () => {
+  const w = E.starWindow(500, MSL); assert.strictEqual(flags(w), '50* 100* 200* 250* 500*'); assert.ok(!w.some((x) => x.next));
+});
+test('звёзды: рубежей меньше размера окна — показываются все', () => {
+  assert.strictEqual(flags(E.starWindow(30, [10, 25, 50])), '10* 25* 50>');
+  assert.strictEqual(E.starWindow(0, []).length, 0);
+});
+test('звёзды: всегда не больше size и без повторов', () => {
+  for (let lv = 0; lv <= 600; lv += 7) { const w = E.starWindow(lv, MSL); assert.strictEqual(w.length, 5); assert.ok(w.filter((x) => x.next).length <= 1); }
+});
+
 // ---- требования к старту ----
 test('старт: хватает на первую станцию сразу', () => { assert.ok(C.START.coins >= E.bulkCost(tavern, 0, 1)); });
 test('старт: первая прибыль после покупки не позже лимита', () => {
